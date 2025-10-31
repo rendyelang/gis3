@@ -1,11 +1,520 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIS 3</title>
-</head>
-<body>
-    <h1>Hai Elang</h1>
-</body>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Peta Wisata Alam Sukabumi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+
+      /* Custom popup styling */
+      .custom-popup {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .popup-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        margin: -15px -20px 15px -20px;
+        border-radius: 5px 5px 0 0;
+      }
+
+      .popup-header h3 {
+        margin: 0 0 5px 0;
+        font-size: 18px;
+      }
+
+      .popup-header .category {
+        font-size: 12px;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .popup-image {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 5px;
+        margin-bottom: 12px;
+      }
+
+      .popup-content {
+        line-height: 1.6;
+      }
+
+      .popup-content p {
+        margin: 8px 0;
+        color: #333;
+        font-size: 14px;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin: 12px 0;
+      }
+
+      .info-item {
+        background: #f5f5f5;
+        padding: 8px;
+        border-radius: 5px;
+        font-size: 13px;
+      }
+
+      .info-item strong {
+        display: block;
+        color: #667eea;
+        font-size: 11px;
+        margin-bottom: 3px;
+      }
+
+      .popup-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 10px;
+        width: 100%;
+        transition: transform 0.2s;
+      }
+
+      .popup-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+      }
+
+      /* Custom tooltip styling */
+      .leaflet-tooltip {
+        background: rgba(0, 0, 0, 0.8);
+        border: none;
+        border-radius: 5px;
+        color: white;
+        font-size: 13px;
+        padding: 8px 12px;
+        font-weight: 500;
+      }
+
+      /* Info panel */
+      .info-panel {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        max-width: 300px;
+      }
+
+      .info-panel h2 {
+        margin: 0 0 15px 0;
+        color: #667eea;
+        font-size: 20px;
+      }
+
+      .info-panel p {
+        margin: 8px 0;
+        font-size: 14px;
+        color: #555;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .stat-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .stat-box .number {
+        font-size: 24px;
+        font-weight: bold;
+        display: block;
+      }
+
+      .stat-box .label {
+        font-size: 11px;
+        opacity: 0.9;
+        margin-top: 5px;
+      }
+
+      /* Pulse animation for markers */
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 15px rgba(102, 126, 234, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+        }
+      }
+
+      .pulsing-icon {
+        animation: pulse 2s infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <div class="info-panel">
+      <h2>🗺️ Wisata Sukabumi</h2>
+      <p>Jelajahi keindahan alam Sukabumi dengan peta interaktif ini.</p>
+      <div class="stats">
+        <div class="stat-box">
+          <span class="number">5</span>
+          <span class="label">Destinasi</span>
+        </div>
+        <div class="stat-box">
+          <span class="number">3</span>
+          <span class="label">Kategori</span>
+        </div>
+        <div class="stat-box">
+          <span class="number">1</span>
+          <span class="label">Geopark</span>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      // Inisialisasi peta
+      var map = L.map("map").setView([-7.15, 106.58], 10);
+
+      // ==== BASE MAPS ====
+      var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
+
+      var satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { attribution: "Tiles © Esri" });
+
+      var terrain = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", { attribution: "Tiles © Esri" });
+
+      // ==== CUSTOM ICONS ====
+      var waterfallIcon = L.divIcon({
+        html: '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 3px solid white;" class="pulsing-icon"><span style="font-size: 20px;">💧</span></div>',
+        className: "",
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20],
+      });
+
+      var beachIcon = L.divIcon({
+        html: '<div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 3px solid white;" class="pulsing-icon"><span style="font-size: 20px;">🏖️</span></div>',
+        className: "",
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20],
+      });
+
+      var geoparkIcon = L.divIcon({
+        html: '<div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 3px solid white;" class="pulsing-icon"><span style="font-size: 20px;">🏔️</span></div>',
+        className: "",
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20],
+      });
+
+      var mountainIcon = L.divIcon({
+        html: '<div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 3px solid white;" class="pulsing-icon"><span style="font-size: 20px;">⛰️</span></div>',
+        className: "",
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20],
+      });
+
+      // ==== WISATA DATA ====
+      var wisataData = [
+        {
+          name: "Curug Cikaso",
+          coords: [-7.336, 106.556],
+          icon: waterfallIcon,
+          category: "Air Terjun",
+          description: "Air terjun spektakuler dengan tiga tingkat yang mengalir deras. Dikenal sebagai 'Niagara Mini' Indonesia dengan keindahan yang memukau.",
+          image: "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/13/00/69/45/curug-cikaso.jpg?w=1200&h=-1&s=1",
+          rating: "4.7",
+          difficulty: "Sedang",
+          duration: "3-4 jam",
+          entrance: "Rp 15.000",
+        },
+        {
+          name: "Geopark Ciletuh",
+          coords: [-7.236, 106.493],
+          icon: geoparkIcon,
+          category: "Geopark",
+          description: "UNESCO Global Geopark dengan formasi geologis unik berusia jutaan tahun. Destinasi edukatif dan wisata alam yang menakjubkan.",
+          image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQt3llfu4GbiVgrRPIco4RuPeQAvmSzjbHYug&s",
+          rating: "4.8",
+          difficulty: "Mudah",
+          duration: "5-6 jam",
+          entrance: "Rp 10.000",
+        },
+        {
+          name: "Pantai Pelabuhan Ratu",
+          coords: [-6.986, 106.547],
+          icon: beachIcon,
+          category: "Pantai",
+          description: "Pantai terkenal dengan legenda Nyi Roro Kidul. Ombak yang besar dan pemandangan sunset yang memukau.",
+          image: "https://static.promediateknologi.id/crop/0x385:1079x1172/0x0/webp/photo/p2/74/2024/06/25/Screenshot_2024-06-25-15-41-41-599_cominstagramandroid-1464844822.jpg",
+          rating: "4.5",
+          difficulty: "Mudah",
+          duration: "2-3 jam",
+          entrance: "Gratis",
+        },
+        {
+          name: "Gunung Gede Pangrango",
+          coords: [-6.782, 106.981],
+          icon: mountainIcon,
+          category: "Gunung",
+          description: "Taman Nasional dengan dua puncak kembar. Destinasi favorit pendaki dengan keanekaragaman flora dan fauna.",
+          image: "https://asset.kompas.com/crops/JCwIqWJVY_Kuncy4mT55wpdj3W8=/30x0:1050x680/1200x800/data/photo/2019/07/03/1069546737.jpg",
+          rating: "4.9",
+          difficulty: "Sulit",
+          duration: "2-3 hari",
+          entrance: "Rp 25.000",
+        },
+        {
+          name: "Curug Sawer",
+          coords: [-7.2, 106.65],
+          icon: waterfallIcon,
+          category: "Air Terjun",
+          description: "Air terjun tersembunyi dengan kolam alami yang jernih. Suasana tenang dan sejuk, cocok untuk relaksasi.",
+          image: "https://media.sukabumiupdate.com/media/2025/01/18/1737158844_678af0bcbc147_VYzN3lVtt2ExWjlwPZUA.webp",
+          rating: "4.6",
+          difficulty: "Sedang",
+          duration: "2-3 jam",
+          entrance: "Rp 10.000",
+        },
+      ];
+
+      // ==== CREATE MARKERS WITH EVENTS ====
+      var markers = [];
+      wisataData.forEach(function (wisata) {
+        var marker = L.marker(wisata.coords, { icon: wisata.icon })
+          .bindTooltip(wisata.name, {
+            permanent: false,
+            direction: "top",
+            offset: [0, -20],
+          })
+          .bindPopup(
+            `
+            <div class="custom-popup">
+              <div class="popup-header">
+                <h3>${wisata.name}</h3>
+                <div class="category">${wisata.category}</div>
+              </div>
+              <img src="${wisata.image}" alt="${wisata.name}" class="popup-image">
+              <div class="popup-content">
+                <p>${wisata.description}</p>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <strong>⭐ RATING</strong>
+                    ${wisata.rating}/5.0
+                  </div>
+                  <div class="info-item">
+                    <strong>🚶 TINGKAT</strong>
+                    ${wisata.difficulty}
+                  </div>
+                  <div class="info-item">
+                    <strong>⏱️ DURASI</strong>
+                    ${wisata.duration}
+                  </div>
+                  <div class="info-item">
+                    <strong>💰 TIKET</strong>
+                    ${wisata.entrance}
+                  </div>
+                </div>
+                <button class="popup-button" onclick="getDirections(${wisata.coords[0]}, ${wisata.coords[1]}, '${wisata.name}')">
+                  📍 Dapatkan Arah
+                </button>
+              </div>
+            </div>
+          `,
+            { maxWidth: 300 }
+          );
+
+        // Add hover events
+        marker.on("mouseover", function (e) {
+          this.openTooltip();
+          // Zoom sedikit saat hover
+          if (map.getZoom() < 12) {
+            map.setView(e.latlng, 12, { animate: true, duration: 0.5 });
+          }
+        });
+
+        marker.on("click", function (e) {
+          // Highlight effect
+          this.setZIndexOffset(1000);
+          console.log("Diklik:", wisata.name);
+
+          // Track kunjungan (simulasi)
+          setTimeout(() => {
+            console.log("Data wisata:", wisata);
+          }, 100);
+        });
+
+        markers.push(marker);
+      });
+
+      var wisataMarkers = L.layerGroup(markers).addTo(map);
+
+      // ==== POLYLINE: rute wisata ====
+      var ruteWisata = L.polyline(
+        [
+          [-6.986, 106.547], // Pantai Pelabuhan Ratu
+          [-7.236, 106.493], // Geopark Ciletuh
+          [-7.336, 106.556], // Curug Cikaso
+          [-7.2, 106.65], // Curug Sawer
+        ],
+        {
+          color: "#667eea",
+          weight: 4,
+          opacity: 0.7,
+          dashArray: "10, 10",
+          lineJoin: "round",
+        }
+      )
+        .bindPopup("<b>Rute Wisata Utama</b><br>Jalur eksplorasi wisata alam Sukabumi")
+        .bindTooltip("Rute Wisata Sukabumi", { sticky: true });
+
+      // Add click event to route
+      ruteWisata.on("click", function () {
+        alert("Rute ini menghubungkan destinasi wisata utama di Sukabumi!");
+      });
+
+      // ==== POLYGON: area wisata ====
+      var kawasanGeopark = L.polygon(
+        [
+          [-7.2, 106.45],
+          [-7.25, 106.45],
+          [-7.25, 106.55],
+          [-7.2, 106.55],
+        ],
+        {
+          color: "#4facfe",
+          fillColor: "#4facfe",
+          fillOpacity: 0.2,
+          weight: 3,
+          dashArray: "5, 5",
+        }
+      )
+        .bindPopup(
+          `
+          <div class="custom-popup">
+            <div class="popup-header">
+              <h3>Kawasan Geopark Ciletuh</h3>
+              <div class="category">Area Konservasi</div>
+            </div>
+            <p>Area konservasi dan wisata alam dengan luas sekitar 126.000 hektar. Diakui UNESCO sebagai Global Geopark.</p>
+          </div>
+        `
+        )
+        .bindTooltip("Kawasan Geopark Ciletuh", { sticky: true });
+
+      // Add events to polygon
+      kawasanGeopark.on("mouseover", function () {
+        this.setStyle({ fillOpacity: 0.4 });
+      });
+
+      kawasanGeopark.on("mouseout", function () {
+        this.setStyle({ fillOpacity: 0.2 });
+      });
+
+      kawasanGeopark.on("click", function () {
+        map.fitBounds(this.getBounds(), { padding: [50, 50] });
+      });
+
+      // ==== LAYER CONTROL ====
+      var baseMaps = {
+        "🗺️ OpenStreetMap": osm,
+        "🛰️ Satellite": satellite,
+        "🏞️ Terrain": terrain,
+      };
+
+      var overlayMaps = {
+        "📍 Lokasi Wisata": wisataMarkers,
+        "🛣️ Rute Wisata": ruteWisata,
+        "🌍 Kawasan Geopark": kawasanGeopark,
+      };
+
+      L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+      // Tampilkan semua overlay saat awal
+      ruteWisata.addTo(map);
+      kawasanGeopark.addTo(map);
+
+      // ==== HELPER FUNCTION ====
+      function getDirections(lat, lng, name) {
+        var googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        window.open(googleMapsUrl, "_blank");
+        console.log("Membuka petunjuk arah ke:", name);
+      }
+
+      // ==== ADDITIONAL MAP EVENTS ====
+      map.on("zoomend", function () {
+        var zoom = map.getZoom();
+        console.log("Zoom level:", zoom);
+
+        // Adjust icon sizes based on zoom
+        if (zoom > 12) {
+          markers.forEach(function (marker) {
+            marker.setOpacity(1);
+          });
+        }
+      });
+
+      map.on("moveend", function () {
+        var center = map.getCenter();
+        console.log("Map center:", center.lat.toFixed(4), center.lng.toFixed(4));
+      });
+
+      // Welcome message
+      setTimeout(function () {
+        L.popup()
+          .setLatLng([-7.15, 106.58])
+          .setContent(
+            `
+            <div style="text-align: center; padding: 10px;">
+              <h3 style="margin: 0 0 10px 0; color: #667eea;">🌟 Selamat Datang!</h3>
+              <p style="margin: 0; font-size: 14px;">Klik marker untuk info detail destinasi wisata</p>
+            </div>
+          `
+          )
+          .openOn(map);
+      }, 1000);
+
+      console.log("Peta wisata Sukabumi dimuat dengan", wisataData.length, "destinasi");
+    </script>
+  </body>
 </html>
